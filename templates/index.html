@@ -1,20 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Server monitor</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-  <header>
-    <p class="brand">Monitoring</p>
-  </header>
-  <main>
-    <h1>Servers</h1>
-    <section class="server-area" aria-label="Servers">
-      <p class="empty">No servers yet.</p>
-    </section>
-  </main>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Servers{% endblock %}
+{% block content %}
+<h1>Servers</h1>
+<p class="lede">Add a Linux server to read CPU, memory, network, and listening ports. Removing a row only changes this list.</p>
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+<form method="post" action="{{ url_for('add_server') }}" class="panel">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label for="display_name">Display name</label>
+  <input id="display_name" name="display_name" type="text" value="{{ form.display_name }}" required>
+  <label for="host">Host name or IP address</label>
+  <input id="host" name="host" type="text" value="{{ form.host }}" required>
+  <label for="port">SSH port</label>
+  <input id="port" name="port" type="number" min="1" max="65535" value="{{ form.port }}" required>
+  <label for="ssh_user">SSH user</label>
+  <input id="ssh_user" name="ssh_user" type="text" value="{{ form.ssh_user }}" required>
+  <label for="ssh_password">SSH password</label>
+  <input id="ssh_password" name="ssh_password" type="password" autocomplete="new-password" required>
+  <p class="hint">The password is saved for the next check and is not shown again.</p>
+  <button type="submit">Save server</button>
+</form>
+<section class="server-area" aria-label="Servers">
+  {% if servers %}
+  <ul class="server-list">
+    {% for server in servers %}
+    <li>
+      <a href="{{ url_for('server_detail', server_id=server.id) }}">{{ server.display_name }}</a>
+      <span>{{ server.host }}:{{ server.port }} · {{ server.ssh_user }}</span>
+      <form method="post" action="{{ url_for('delete_server', server_id=server.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="quiet">Remove</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">No servers yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

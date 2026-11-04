@@ -11,15 +11,19 @@ body {
 }
 
 header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   background: #1c1917;
   color: #f6f3ee;
   padding: 1rem 2rem;
 }
 
 .brand {
-  margin: 0;
+  color: inherit;
   font-size: 0.95rem;
   letter-spacing: 0.04em;
+  text-decoration: none;
 }
 
 main {
@@ -45,4 +49,123 @@ h1 {
 .empty {
   margin: 0;
   color: #78716c;
+}
+
+.lede,
+.hint,
+.back {
+  color: #57534e;
+}
+
+.back {
+  margin-bottom: 0.5rem;
+}
+
+.notice {
+  margin: 0 0 1rem;
+  color: #365314;
+}
+
+.error {
+  margin: 0 0 1rem;
+  color: #9f1239;
+}
+
+.panel {
+  display: grid;
+  gap: 0.4rem;
+  max-width: 28rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid #e7e0d6;
+  border-radius: 6px;
+}
+
+label {
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+}
+
+input {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #d6d3d1;
+  border-radius: 4px;
+}
+
+button {
+  width: fit-content;
+  margin-top: 0.6rem;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  color: #f6f3ee;
+  background: #1c1917;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button.link,
+button.quiet {
+  margin-top: 0;
+  padding: 0.2rem 0.55rem;
+  color: #f6f3ee;
+  background: transparent;
+  border: 1px solid #78716c;
+}
+
+button.quiet {
+  color: #44403c;
+  background: #fff;
+  border-color: #d6d3d1;
+}
+
+.server-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.server-list li {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1.2fr) minmax(10rem, 2fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid #e7e0d6;
+}
+
+.server-list li:last-child {
+  border-bottom: 0;
+}
+
+.server-list a {
+  color: #1c1917;
+}
+
+.metric {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid #e7e0d6;
+  border-radius: 6px;
+}
+
+.metric h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  font-weight: normal;
+}
+
+.metric p,
+.metric ul {
+  margin: 0.2rem 0;
+}
+
+[hidden] {
+  display: none;
 }

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ server.display_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{{ url_for('index') }}">All servers</a></p>
+<h1>{{ server.display_name }}</h1>
+<p class="lede">{{ server.host }}:{{ server.port }}. This page only reads metrics. It updates about every 5 seconds.</p>
+<p id="error" class="error"{% if not snapshot.error %} hidden{% endif %}>{{ snapshot.error or "" }}</p>
+<div id="metrics"{% if snapshot.error %} hidden{% endif %}>
+  <section class="metric">
+    <h2>CPU use</h2>
+    <p id="cpu">{% if snapshot.cpu_percent is not none %}{{ snapshot.cpu_percent }}%{% endif %}</p>
+  </section>
+  <section class="metric">
+    <h2>Memory</h2>
+    <p id="memory-used">Used: {{ snapshot.memory.used if snapshot.memory else "" }}</p>
+    <p id="memory-free">Free: {{ snapshot.memory.free if snapshot.memory else "" }}</p>
+    <p id="memory-total">Total: {{ snapshot.memory.total if snapshot.memory else "" }}</p>
+  </section>
+  <section class="metric">
+    <h2>Network</h2>
+    <ul id="network">
+      {% for item in snapshot.network or [] %}
+      <li>{{ item.interface }}: {{ item.bytes_in }} bytes in, {{ item.bytes_out }} bytes out</li>
+      {% endfor %}
+    </ul>
+  </section>
+  <section class="metric">
+    <h2>Listening ports</h2>
+    <ul id="ports">
+      {% for item in snapshot.ports or [] %}
+      <li>{{ item.protocol }} {{ item.address }}:{{ item.port }}{% if item.process %} · {{ item.process }}{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+<script>
+  const metricsUrl = {{ url_for('server_metrics', server_id=server.id) | tojson }};
+
+  function textList(node, lines) {
+    node.replaceChildren();
+    lines.forEach(function (line) {
+      const item = document.createElement("li");
+      item.textContent = line;
+      node.appendChild(item);
+    });
+  }
+
+  function show(data) {
+    const error = document.getElementById("error");
+    const metrics = document.getElementById("metrics");
+    if (data.error) {
+      error.hidden = false;
+      error.textContent = data.error;
+      metrics.hidden = true;
+      return;
+    }
+    error.hidden = true;
+    error.textContent = "";
+    metrics.hidden = false;
+    document.getElementById("cpu").textContent = data.cpu_percent + "%";
+    document.getElementById("memory-used").textContent = "Used: " + data.memory.used;
+    document.getElementById("memory-free").textContent = "Free: " + data.memory.free;
+    document.getElementById("memory-total").textContent = "Total: " + data.memory.total;
+    textList(document.getElementById("network"), (data.network || []).map(function (item) {
+      return item.interface + ": " + item.bytes_in + " bytes in, " + item.bytes_out + " bytes out";
+    }));
+    textList(document.getElementById("ports"), (data.ports || []).map(function (item) {
+      const process = item.process ? " · " + item.process : "";
+      return item.protocol + " " + item.address + ":" + item.port + process;
+    }));
+  }
+
+  async function refresh() {
+    const response = await fetch(metricsUrl, {headers: {"Accept": "application/json"}});
+    if (!response.ok || (response.url && response.url.indexOf("/signin") !== -1)) {
+      window.location = {{ url_for('signin') | tojson }};
+      return;
+    }
+    show(await response.json());
+  }
+
+  setInterval(refresh, 5000);
+</script>
+{% endblock %}
