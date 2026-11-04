@@ -7,6 +7,7 @@ from collector import (
     CPU_COMMAND,
     MEMORY_COMMAND,
     NETWORK_COMMAND,
+    DISK_COMMAND,
     PORTS_COMMAND,
     PORTS_FALLBACK_COMMAND,
     TIMEOUT_SECONDS,
@@ -34,6 +35,11 @@ NETSTAT = """\
 Active Internet connections (only servers)
 Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
 tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      123/sshd
+"""
+DISK = """\
+Filesystem 1024-blocks Used Available Capacity Mounted on
+/dev/root 100 39 61 39% /
+/dev/sda1 100 10 90 10% /boot
 """
 
 SERVER = {
@@ -66,6 +72,7 @@ class CollectorTests(unittest.TestCase):
                 MEMORY_COMMAND: (0, MEMORY),
                 NETWORK_COMMAND: (0, NETWORK),
                 PORTS_COMMAND: (0, SS),
+                DISK_COMMAND: (0, DISK),
             }
         )
         seen = {}
@@ -100,8 +107,9 @@ class CollectorTests(unittest.TestCase):
         )
         self.assertEqual(
             session.commands,
-            [CPU_COMMAND, MEMORY_COMMAND, NETWORK_COMMAND, PORTS_COMMAND],
+            [CPU_COMMAND, MEMORY_COMMAND, NETWORK_COMMAND, PORTS_COMMAND, DISK_COMMAND],
         )
+        self.assertEqual(result["disk"], {"percent": 39, "mount": "/", "label": "39% on /"})
         self.assertNotIn(SERVER["host"], " ".join(session.commands))
         self.assertNotIn(SERVER["ssh_password"], " ".join(session.commands))
         self.assertEqual(seen["timeout"], TIMEOUT_SECONDS)
@@ -139,6 +147,7 @@ class CollectorTests(unittest.TestCase):
                 NETWORK_COMMAND: (0, NETWORK),
                 PORTS_COMMAND: (127, "ss: not found"),
                 PORTS_FALLBACK_COMMAND: (0, NETSTAT),
+                DISK_COMMAND: (0, DISK),
             }
         )
         result = collect_metrics(SERVER, connect=lambda *args, **kwargs: session)
@@ -146,7 +155,7 @@ class CollectorTests(unittest.TestCase):
             result["ports"],
             [{"port": 22, "protocol": "tcp", "address": "0.0.0.0", "process": "sshd"}],
         )
-        self.assertEqual(session.commands[-1], PORTS_FALLBACK_COMMAND)
+        self.assertIn(PORTS_FALLBACK_COMMAND, session.commands)
         self.assertTrue(session.closed)
 
 

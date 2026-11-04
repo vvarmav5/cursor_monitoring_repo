@@ -47,8 +47,9 @@ Opening a server shows four metrics, labeled in plain language:
 - Memory (used, free, and total)
 - Network (bytes in and bytes out per interface)
 - Listening ports (port, protocol, address, and process name when the host provides it)
+- Fullest disk (percent and mount point)
 
-The numbers refresh about every 5 seconds without reloading the page. The commands are fixed in code: `cat /proc/stat`, `free`, `cat /proc/net/dev`, and `ss -lntup` (or `netstat -lntup` when `ss` is missing). A failed check shows `unreachable`, `authentication failed`, or `timed out` on that server. The server list still loads.
+The server list shows status, CPU, memory, and fullest disk, and refreshes about every 5 seconds. Opening a server shows the same readings in more detail. The commands are fixed in code: `cat /proc/stat`, `free`, `cat /proc/net/dev`, `ss -lntup` (or `netstat -lntup` when `ss` is missing), and `df -P`. A failed check shows `unreachable`, `authentication failed`, or `timed out` on that server. The server list still loads.
 
 ## Local check
 

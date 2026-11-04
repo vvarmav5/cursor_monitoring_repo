@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="lede">Open Server for the current readings from each Linux host.</p>
+  </div>
+</div>
+<section class="server-card">
+  <h2>Current snapshot</h2>
+  <p class="empty">The server list shows CPU, memory, disk, and whether each host is online.</p>
+  <p><a class="server-name" href="{{ url_for('index') }}">Go to servers</a></p>
+</section>
+{% endblock %}

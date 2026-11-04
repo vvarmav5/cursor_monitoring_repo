@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Servers{% endblock %}
 {% block content %}
-<h1>Servers</h1>
-<p class="lede">Add a Linux server to read CPU, memory, network, and listening ports. Removing a row only changes this list.</p>
+<div class="page-head">
+  <div>
+    <h1>Servers</h1>
+    <p class="lede">Current readings refresh every 5 seconds. Remove drops a server from this list.</p>
+  </div>
+  <button type="button" class="add-server" id="show-add">Add server</button>
+</div>
 {% if error %}
 <p class="error">{{ error }}</p>
 {% endif %}
-<form method="post" action="{{ url_for('add_server') }}" class="panel">
+<form method="post" action="{{ url_for('add_server') }}" class="panel" id="add-panel"{% if not show_form %} hidden{% endif %}>
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <label for="display_name">Display name</label>
   <input id="display_name" name="display_name" type="text" value="{{ form.display_name }}" required>
@@ -21,22 +26,88 @@
   <p class="hint">The password is saved for the next check and is not shown again.</p>
   <button type="submit">Save server</button>
 </form>
-<section class="server-area" aria-label="Servers">
+<section class="server-card" aria-label="Servers">
+  <h2>Monitored Linux servers</h2>
   {% if servers %}
-  <ul class="server-list">
-    {% for server in servers %}
-    <li>
-      <a href="{{ url_for('server_detail', server_id=server.id) }}">{{ server.display_name }}</a>
-      <span>{{ server.host }}:{{ server.port }} · {{ server.ssh_user }}</span>
-      <form method="post" action="{{ url_for('delete_server', server_id=server.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="quiet">Remove</button>
-      </form>
-    </li>
-    {% endfor %}
-  </ul>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Host</th>
+        <th>Status</th>
+        <th>CPU</th>
+        <th>Memory</th>
+        <th>Fullest disk</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for server in servers %}
+      <tr data-server-id="{{ server.id }}">
+        <td><a class="server-name" href="{{ url_for('server_detail', server_id=server.id) }}">{{ server.display_name }}</a></td>
+        <td class="host">{{ server.host }}:{{ server.port }}</td>
+        <td><span class="status" id="status-{{ server.id }}">checking</span></td>
+        <td id="cpu-{{ server.id }}">—</td>
+        <td id="memory-{{ server.id }}">—</td>
+        <td id="disk-{{ server.id }}">—</td>
+        <td>
+          <form method="post" action="{{ url_for('delete_server', server_id=server.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="remove">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
   {% else %}
   <p class="empty">No servers yet.</p>
   {% endif %}
 </section>
+<script>
+  const addButton = document.getElementById("show-add");
+  const addPanel = document.getElementById("add-panel");
+  addButton.addEventListener("click", function () {
+    addPanel.hidden = !addPanel.hidden;
+    if (!addPanel.hidden) {
+      document.getElementById("display_name").focus();
+    }
+  });
+
+  function showValue(id, value, suffix) {
+    const node = document.getElementById(id);
+    if (!node) {
+      return;
+    }
+    node.textContent = value === null || value === undefined || value === "" ? "—" : value + (suffix || "");
+  }
+
+  function showReading(row) {
+    const status = document.getElementById("status-" + row.id);
+    if (!status) {
+      return;
+    }
+    const online = row.status === "online";
+    status.textContent = row.status;
+    status.className = online ? "status" : "status bad";
+    showValue("cpu-" + row.id, row.cpu, "%");
+    showValue("memory-" + row.id, row.memory, "%");
+    showValue("disk-" + row.id, row.disk, "");
+  }
+
+  async function refresh() {
+    const response = await fetch({{ url_for('server_readings') | tojson }}, {headers: {"Accept": "application/json"}});
+    if (!response.ok || (response.url && response.url.indexOf("/signin") !== -1)) {
+      window.location = {{ url_for('signin') | tojson }};
+      return;
+    }
+    const data = await response.json();
+    (data.servers || []).forEach(showReading);
+  }
+
+  {% if servers %}
+  refresh();
+  setInterval(refresh, 5000);
+  {% endif %}
+</script>
 {% endblock %}
