@@ -3,17 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Server monitor{% endblock %}</title>
+  <title>{% block title %}Server Monitor{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <header>
-    <a class="brand" href="{{ url_for('index') }}">Monitoring</a>
+    <a class="brand" href="{{ url_for('index') }}">Server Monitor</a>
     {% if session.get('user') == 'admin' %}
-    <form method="post" action="{{ url_for('signout') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="link">Sign out</button>
-    </form>
+    <nav>
+      <a href="{{ url_for('dashboard') }}" {% if active == 'dashboard' %}class="current"{% endif %}>Dashboard</a>
+      <a href="{{ url_for('index') }}" {% if active == 'servers' %}class="current"{% endif %}>Server</a>
+      <a href="{{ url_for('history') }}" {% if active == 'history' %}class="current"{% endif %}>History</a>
+      <form method="post" action="{{ url_for('signout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="sign-out">Sign out</button>
+      </form>
+    </nav>
     {% endif %}
   </header>
   <main>

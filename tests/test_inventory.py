@@ -34,9 +34,10 @@ class InventoryTests(unittest.TestCase):
         listed = self.client.get("/")
         body = listed.get_data(as_text=True)
         self.assertIn("Web", body)
-        self.assertIn("10.1.1.8", body)
-        self.assertIn("monitor", body)
+        self.assertIn("10.1.1.8:22", body)
+        self.assertIn("Monitored Linux servers", body)
         self.assertNotIn(SSH_PASSWORD, body)
+        self.assertNotIn(">monitor<", body)
 
         connection = store.connect(self.database)
         try:

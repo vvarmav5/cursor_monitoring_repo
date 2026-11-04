@@ -9,6 +9,7 @@ MEMORY_COMMAND = "free"
 NETWORK_COMMAND = "cat /proc/net/dev"
 PORTS_COMMAND = "ss -lntup"
 PORTS_FALLBACK_COMMAND = "netstat -lntup"
+DISK_COMMAND = "df -P"
 TIMEOUT_SECONDS = 5
 
 
@@ -30,14 +31,22 @@ def collect_metrics(server, connect=None):
         ports_code, ports_text = client.run(PORTS_COMMAND)
         if ports_code != 0:
             ports_code, ports_text = client.run(PORTS_FALLBACK_COMMAND)
+        disk_code, disk_text = client.run(DISK_COMMAND)
         if cpu_code != 0 or memory_code != 0 or network_code != 0 or ports_code != 0:
             return {"error": "could not read metrics"}
+        disk = None
+        if disk_code == 0:
+            try:
+                disk = parse_disk(disk_text)
+            except ValueError:
+                disk = None
         return {
             "error": None,
             "cpu_percent": parse_cpu(cpu_text),
             "memory": parse_memory(memory_text),
             "network": parse_network(network_text),
             "ports": parse_ports(ports_text),
+            "disk": disk,
         }
     except ValueError:
         return {"error": "could not read metrics"}
@@ -150,6 +159,25 @@ def parse_network(text):
     if not interfaces:
         raise ValueError("missing interface counters")
     return interfaces
+
+
+def parse_disk(text):
+    fullest = None
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 6 or parts[0] == "Filesystem":
+            continue
+        capacity = parts[-2]
+        if not capacity.endswith("%"):
+            continue
+        percent = int(capacity[:-1])
+        mount = parts[-1]
+        if fullest is None or percent > fullest[0]:
+            fullest = (percent, mount)
+    if fullest is None:
+        raise ValueError("missing disk totals")
+    percent, mount = fullest
+    return {"percent": percent, "mount": mount, "label": f"{percent}% on {mount}"}
 
 
 def parse_ports(text):

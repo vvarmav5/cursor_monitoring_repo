@@ -120,7 +120,29 @@ def create_app(config=None):
     @app.get("/")
     def index():
         servers = store.list_servers(get_db())
-        return render_template("index.html", servers=servers, error=None, form=empty_form())
+        return render_template(
+            "index.html",
+            servers=servers,
+            error=None,
+            form=empty_form(),
+            show_form=False,
+            active="servers",
+        )
+
+    @app.get("/dashboard")
+    def dashboard():
+        return render_template("dashboard.html", active="dashboard")
+
+    @app.get("/history")
+    def history():
+        return render_template("history.html", active="history")
+
+    @app.get("/servers/readings")
+    def server_readings():
+        rows = []
+        for server in store.list_servers(get_db()):
+            rows.append(reading_for(server["id"]))
+        return jsonify({"servers": rows})
 
     @app.post("/servers")
     def add_server():
@@ -136,7 +158,14 @@ def create_app(config=None):
         error = validate_server(form, password)
         if error:
             servers = store.list_servers(get_db())
-            return render_template("index.html", servers=servers, error=error, form=form), 400
+            return render_template(
+                "index.html",
+                servers=servers,
+                error=error,
+                form=form,
+                show_form=True,
+                active="servers",
+            ), 400
         store.add_server(
             get_db(),
             form["display_name"],
@@ -160,7 +189,12 @@ def create_app(config=None):
         if summary is None:
             abort(404)
         snapshot = snapshot_for(server_id)
-        return render_template("server.html", server=summary, snapshot=snapshot)
+        return render_template(
+            "server.html",
+            server=summary,
+            snapshot=snapshot,
+            active="servers",
+        )
 
     @app.get("/servers/<int:server_id>/metrics")
     def server_metrics(server_id):
@@ -284,6 +318,30 @@ def public_snapshot(raw):
         "memory": raw.get("memory"),
         "network": raw.get("network") or [],
         "ports": raw.get("ports") or [],
+        "disk": raw.get("disk"),
+    }
+
+
+def reading_for(server_id):
+    snapshot = snapshot_for(server_id)
+    if snapshot.get("error"):
+        return {
+            "id": server_id,
+            "status": snapshot["error"],
+            "cpu": None,
+            "memory": None,
+            "disk": None,
+        }
+    memory = snapshot.get("memory") or {}
+    total = memory.get("total") or 0
+    used = memory.get("used") or 0
+    disk = snapshot.get("disk") or {}
+    return {
+        "id": server_id,
+        "status": "online",
+        "cpu": snapshot.get("cpu_percent"),
+        "memory": round(100.0 * used / total, 1) if total else None,
+        "disk": disk.get("label"),
     }
 
 
